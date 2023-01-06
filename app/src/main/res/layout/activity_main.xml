@@ -1,44 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     tools:context=".MainActivity">
 
+
     <TextureView
-        android:id="@+id/cameraView"
+        android:id="@+id/textureView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="14" />
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
 
-    <LinearLayout
-        android:id="@+id/ll2"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp"
-        android:layout_weight="1"
-        android:orientation="horizontal">
+    <ImageView
+        android:id="@+id/btnTack"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:src="@drawable/capture"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.94" />
 
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnTack"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
-            android:layout_weight="1"
-            android:text="Click A Photo"
-            android:textColor="@color/black" />
+    <ImageView
+        android:id="@+id/btnView"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:src="@drawable/images"
+        app:layout_constraintBottom_toBottomOf="@+id/btnTack"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.83"
+        app:layout_constraintStart_toEndOf="@+id/btnTack"
+        app:layout_constraintTop_toTopOf="@+id/btnTack" />
 
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
-            android:layout_weight="1"
-            android:text="View A Photo"
-            android:textColor="@color/black" />
-    </LinearLayout>
+    <ImageView
+        android:id="@+id/switch_camera_btn"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:src="@drawable/switch_camera"
+        app:layout_constraintBottom_toBottomOf="@+id/btnTack"
+        app:layout_constraintEnd_toStartOf="@+id/btnTack"
+        app:layout_constraintHorizontal_bias="0.13"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/btnTack" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

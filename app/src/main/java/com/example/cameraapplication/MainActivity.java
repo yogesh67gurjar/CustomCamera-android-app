@@ -1,18 +1,12 @@
 package com.example.cameraapplication;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Camera;
 import android.graphics.ImageFormat;
-import android.graphics.PathMeasure;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -25,7 +19,6 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -36,10 +29,9 @@ import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.View;
 import android.widget.Toast;
-
 import com.example.cameraapplication.databinding.ActivityMainBinding;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -51,88 +43,44 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-
 public class MainActivity extends AppCompatActivity {
     ActivityMainBinding binding;
 
-    public static final String TAG = "AndroidCameraApi";
-    public static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    public static boolean state=false;
 
+
+    // only for Logcat purpose
+    public static final String TAG = "AndroidCameraApi";
+
+    // for image orientation (Horizontal/Vertical)
+    public static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 0);
         ORIENTATIONS.append(Surface.ROTATION_90, 90);
-        ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        ORIENTATIONS.append(Surface.ROTATION_270, 180);
+        ORIENTATIONS.append(Surface.ROTATION_180, 180);
+        ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
 
+    // camera ki id string array me aegi to apn isko string isliye le rhe he qki wha apn string array ka [0] ya phir [1] use kr rhe he
+    // [0] mtlb back camera
+    // [1] mtlb front camera
     private String cameraId;
+
+    // camera jo connected he with the device
     protected CameraDevice cameraDevice;
-    protected CameraCaptureSession cameraCaptureSessions;
-    protected CaptureRequest.Builder captureRequestBuilder;
-    private Size imageDimension;
-    private ImageReader imageReader;
-    private File file;
-    private File folder;
-    private String folderName = "Clips";
-    public static final int REQUEST_CAMERA_PERMISSION = 200;
-
-    private Handler mBackgroundHandler;
-    private HandlerThread mBackgroundThread;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        binding.cameraView.setSurfaceTextureListener(textureListener);
-
-        binding.btnTack.setOnClickListener(v -> {
-            tackPicture();
-        });
-
-        binding.btnView.setOnClickListener(v -> {
-            startActivity(new Intent(this, CustomGallery.class));
-        });
-    }
-
-    TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
-        @Override
-        public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
-            openCamera();
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
-
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
-            return false;
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-
-        }
-    };
-
+    // cameradevice ko setup krne k liye cameradevice ka stateCallBack use krna pdega
     private final CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
-
-            //This is called when the camera is open
+            // isse apn ko ek cameraDevice milega to setup actual camera
             Log.e(TAG, "onOpened");
             cameraDevice = camera;
             createCameraPreview();
-
         }
 
         @Override
         public void onDisconnected(@NonNull CameraDevice camera) {
             cameraDevice.close();
-
         }
 
         @Override
@@ -142,9 +90,68 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    protected CameraCaptureSession cameraCaptureSessions;
+    protected CaptureRequest.Builder captureRequestBuilder;
+
+    private Size imageDimension;
+    private ImageReader imageReader;
+    private File file;
+    private File folder;
+    private String folderName = "Clips";
+    public static final int REQUEST_CAMERA_PERMISSION = 200;
+
+
+    // ek background thread and uska handler bnaenge apn qki apn main thread me time consuming task ko nhi daalna chaahte
+    // to give user a smooth experience
+    private HandlerThread mBackgroundThread;
+    private Handler mBackgroundHandler;
+
+
+
+    // ye zruri he textureView ko setup krne k liye
+    TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
+            openCamera();
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
+        }
+
+        @Override
+        public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
+            return false;
+        }
+
+        @Override
+        public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
+        }
+    };
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        // normally textureView plain screen type dikhega , usko setup krne k liye surfaceTextureListener lgega
+        binding.textureView.setSurfaceTextureListener(textureListener);
+
+
+        binding.btnTack.setOnClickListener(v -> {tackPicture();});
+        binding.btnView.setOnClickListener(v -> {startActivity(new Intent(this, CustomGallery.class));});
+        binding.switchCameraBtn.setOnClickListener(v -> openCamera());
+    }
+
     protected void startBackgroundThread() {
+        // background thread created with name as "Camera Background" and naam apn kuch bhi rkh skte he
         mBackgroundThread = new HandlerThread("Camera Background");
+        // background thread start kr do
         mBackgroundThread.start();
+        // background thread ko handler ko de diya
+        // dont get confused with getLooper , apn ne handler ko handle krne k liye thread di he bs or kuch nhi
         mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
     }
 
@@ -176,21 +183,26 @@ public class MainActivity extends AppCompatActivity {
                 if (characteristics != null) {
                     jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
                 }
-                int width = 640;
-                int height = 480;
+
+                int width = 480;
+                int height = 640;
                 if (jpegSizes != null && jpegSizes.length > 0) {
                     width = jpegSizes[0].getWidth();
                     height = jpegSizes[0].getHeight();
                 }
+
+
                 ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
                 List<Surface> outputSurfaces = new ArrayList<Surface>(2);
                 outputSurfaces.add(reader.getSurface());
-                outputSurfaces.add(new Surface(binding.cameraView.getSurfaceTexture()));
+                outputSurfaces.add(new Surface(binding.textureView.getSurfaceTexture()));
                 final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                 captureBuilder.addTarget(reader.getSurface());
                 captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+
                 //Orientation
                 int rotation = getWindowManager().getDefaultDisplay().getRotation();
+
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
                 file = null;
                 folder = new File(folderName);
@@ -266,14 +278,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    // kya memory me image save nhi kii ja skti ?? usko check krta he ye function
     private static boolean isExternalStorageReadOnly() {
+        // external storage ki state leli apn ne extStorage variable me
         String extStorage = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(extStorage)) {
+        if (extStorage.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
             return true;
         }
         return false;
     }
 
+    // kya external storage me read & write kiya ja skta he
     private boolean isExternalStorageAvailableForRW() {
         String extStorage = Environment.getExternalStorageState();
         if (extStorage.equals(Environment.MEDIA_MOUNTED)) {
@@ -282,10 +297,12 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+
     private boolean isStoragePermissionGranted() {
+        // agar SDK version 23 se zyada hai to ckeck kro k permission di he ya nhi qki 23 SDK k phle storage ki permission nhi leni pdti thi
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                //Permission is granted
+                //Permission dii hui he
                 return true;
             } else {
                 //Permission is revoked
@@ -300,7 +317,7 @@ public class MainActivity extends AppCompatActivity {
 
     protected void createCameraPreview() {
         try {
-            SurfaceTexture texture = binding.cameraView.getSurfaceTexture();
+            SurfaceTexture texture = binding.textureView.getSurfaceTexture();
             assert texture != null;
             texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
             Surface surface = new Surface(texture);
@@ -315,16 +332,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     cameraCaptureSessions = cameraCaptureSession;
                     updatePreview();
-//                    if (null == cameraDevice) {
-//                        Log.e (TAG, "updatePreview error ,return");
-//                    }
-//                    captureRequestBuilder.set (CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-//                    try {
-
-//                        cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
-//                    } catch (CameraAccessException e) {
-//                        e.printStackTrace();
-//                    }
+//
                 }
 
                 @Override
@@ -339,26 +347,71 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openCamera() {
+
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        Log.e(TAG, "is Camera Open...");
-        try {
-            cameraId = manager.getCameraIdList()[0];
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            assert map != null;
-            imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
-            //add permission for camera and let user grant the permission
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
-                    PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
-                return;
-            }
-            manager.openCamera(cameraId, stateCallback, null);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
+
+        if(cameraDevice!=null)
+        {
+            cameraDevice.close();
+            cameraDevice=null;
+            stopBackgroundThread();
         }
+
+
+        if(!state)
+        {
+            state=true;
+            try {
+                cameraId = manager.getCameraIdList()[0];
+
+                // hr camera ie [0]/[1] ki apni apni characteristics hoti he to apn id ko daalenge characteristics me un characteristics ko use krne k liye
+                CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+                startBackgroundThread();
+                StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                assert map != null;
+                imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
+                //add permission for camera and let user grant the permission
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
+                        PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
+                    return;
+                }
+                manager.openCamera(cameraId, stateCallback, null);
+            } catch (CameraAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        else
+        {
+            state=false;
+            try {
+                cameraId = manager.getCameraIdList()[1];
+
+                // hr camera ie [0]/[1] ki apni apni characteristics hoti he to apn id ko daalenge characteristics me un characteristics ko use krne k liye
+                CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+                startBackgroundThread();
+                StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                assert map != null;
+                imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
+                //add permission for camera and let user grant the permission
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
+                        PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
+                    return;
+                }
+                manager.openCamera(cameraId, stateCallback, null);
+            } catch (CameraAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        // cameraManager hota he camera ki id lene k liye
+        // niche apn ne cameraManager ko initialize kiya he
+        Log.e(TAG, "is Camera Open...");
+
         Log.e(TAG, "openCamera X");
     }
 
@@ -373,7 +426,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
@@ -383,7 +435,6 @@ public class MainActivity extends AppCompatActivity {
             if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
                 //close the application...
                 Toast.makeText(this, "Sorry!!!, You can't use  this  app without granting permission", Toast.LENGTH_SHORT).show();
-                finish();
             }
         }
     }
@@ -393,18 +444,24 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         Log.e(TAG, "onResume");
         startBackgroundThread();
-        if (binding.cameraView.isAvailable()) {
+        if (binding.textureView.isAvailable()) {
             openCamera();
         } else {
-            binding.cameraView.setSurfaceTextureListener(textureListener);
+            binding.textureView.setSurfaceTextureListener(textureListener);
         }
     }
 
     @Override
     protected void onPause() {
         Log.e(TAG, "onPause");
-        //Close Camera
-        startBackgroundThread();
+        // jb app apn use nhi kr rhe he tb apn camera ko use me nhi rkhna chahte background me isliye usko close krenge apn
+        if(cameraDevice!=null)
+        {
+            cameraDevice.close();
+            cameraDevice=null;
+            stopBackgroundThread();
+        }
         super.onPause();
+
     }
 }
