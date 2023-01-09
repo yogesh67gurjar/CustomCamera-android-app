@@ -140,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
         binding.textureView.setSurfaceTextureListener(textureListener);
 
 
-        binding.btnTack.setOnClickListener(v -> {tackPicture();});
+        binding.btnTack.setOnClickListener(v -> {takePicture();});
         binding.btnView.setOnClickListener(v -> {startActivity(new Intent(this, CustomGallery.class));});
         binding.switchCameraBtn.setOnClickListener(v -> openCamera());
     }
@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    protected void tackPicture() {
+    protected void takePicture() {
 
         if (cameraDevice == null) {
             Log.e(TAG, "cameraDevice is null");
